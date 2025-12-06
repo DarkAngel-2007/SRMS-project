@@ -2,223 +2,367 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define STUD_FILE "students.txt"
-#define CRE_FILE  "credentials.txt"
+#define STUDENT_FILE    "students.dat"
+#define CREDENTIAL_FILE "credentials.txt"
 
+struct Student {
+    int   roll;
+    char  name[50];
+    float marks;
+};
+
+char currentRole[16];
 char currentUser[50];
-char currentRole[20];
 
-int login() {
-    char u[50], p[50], r[20];
-    char inUser[50], inPass[50];
 
-    printf("USERNAME: ");
-    scanf("%s", inUser);
-    printf("PASSWORD: ");
-    scanf("%s", inPass);
+int  loginSystem(void);
+void mainMenu(void);
+void adminMenu(void);
+void userMenu(void);
+void staffMenu(void);
+void guestMenu(void);
 
-    FILE *fp = fopen(CRE_FILE, "r");
+
+void addStudent(void);
+void displayStudents(void);
+void searchStudent(void);
+void updateStudent(void);
+void deleteStudent(void);
+
+
+void clearInputBuffer(void);
+
+int main(void) {
+    if (loginSystem()) {
+        mainMenu();
+    } else {
+        printf("\nAccess Denied. Exiting...\n");
+    }
+    return 0;
+}
+
+
+
+int loginSystem(void) {
+    char username[50], password[50];
+    char fileUser[50], filePass[50], fileRole[16];
+    int found = 0;
+
+    printf("===== Login =====\n");
+    printf("Username: ");
+    if (scanf("%49s", username) != 1) return 0;
+    printf("Password: ");
+    if (scanf("%49s", password) != 1) return 0;
+
+    FILE *fp = fopen(CREDENTIAL_FILE, "r");
     if (!fp) {
-        printf("Credential file missing!\n");
+        printf("Error: %s not found!\n", CREDENTIAL_FILE);
         return 0;
     }
 
-    while (fscanf(fp, "%s %s %s", u, p, r) == 3) {
-        if (strcmp(inUser, u) == 0 && strcmp(inPass, p) == 0) {
-            strcpy(currentUser, u);
-            strcpy(currentRole, r);
-            fclose(fp);
-            return 1;
+    while (fscanf(fp, "%49s %49s %15s", fileUser, filePass, fileRole) == 3) {
+        if (strcmp(username, fileUser) == 0 && strcmp(password, filePass) == 0) {
+            strncpy(currentRole, fileRole, sizeof(currentRole) - 1);
+            currentRole[sizeof(currentRole) - 1] = '\0';
+            strncpy(currentUser, fileUser, sizeof(currentUser) - 1);
+            currentUser[sizeof(currentUser) - 1] = '\0';
+            found = 1;
+            break;
         }
     }
 
     fclose(fp);
-    return 0;
+
+    if (found) {
+        printf("\nLogin successful!\n");
+        printf("Logged in user : %s\n", currentUser);
+        printf("Role           : %s\n", currentRole);
+        return 1;
+    } else {
+        printf("\nInvalid username or password.\n");
+        return 0;
+    }
 }
 
-void addStudent() {
-    int roll;
-    char name[50];
-    float mark;
 
-    printf("Roll: ");
-    scanf("%d", &roll);
-    printf("Name: ");
-    scanf(" %[^\n]", name);
-    printf("Mark: ");
-    scanf("%f", &mark);
 
-    FILE *fp = fopen(STUD_FILE, "a");
-    fprintf(fp, "%d %s %.2f\n", roll, name, mark);
-    fclose(fp);
-
-    printf("Student added!\n");
+void mainMenu(void) {
+    if (strcmp(currentRole, "ADMIN") == 0) {
+        adminMenu();
+    } else if (strcmp(currentRole, "USER") == 0) {
+        userMenu();
+    } else if (strcmp(currentRole, "STAFF") == 0) {
+        staffMenu();
+    } else {
+        guestMenu();
+    }
 }
 
-void displayStudents() {
-    FILE *fp = fopen(STUD_FILE, "r");
+
+void adminMenu(void) {
+    int choice;
+    do {
+        printf("\n===== ADMIN MENU =====\n");
+        printf("1. Add student\n");
+        printf("2. Display students\n");
+        printf("3. Search student\n");
+        printf("4. Update student\n");
+        printf("5. Delete student\n");
+        printf("6. Logout\n");
+        printf("Enter choice: ");
+        if (scanf("%d", &choice) != 1) {
+            clearInputBuffer();
+            choice = -1;
+        }
+
+        switch (choice) {
+            case 1: addStudent();       break;
+            case 2: displayStudents();  break;
+            case 3: searchStudent();    break;
+            case 4: updateStudent();    break;
+            case 5: deleteStudent();    break;
+            case 6: printf("Logging out...\n"); break;
+            default: printf("Invalid choice. Try again.\n");
+        }
+    } while (choice != 6);
+}
+
+
+
+void userMenu(void) {
+    int choice;
+    do {
+        printf("\n===== USER MENU =====\n");
+        printf("1. View profile\n");
+        printf("2. View students\n");
+        printf("3. Logout\n");
+        printf("Enter choice: ");
+        if (scanf("%d", &choice) != 1) {
+            clearInputBuffer();
+            choice = -1;
+        }
+
+        switch (choice) {
+            case 1:
+                printf("Profile: %s (role %s)\n", currentUser, currentRole);
+                break;
+            case 2:
+                displayStudents();
+                break;
+            case 3:
+                printf("Logging out...\n");
+                break;
+            default:
+                printf("Invalid choice. Try again.\n");
+        }
+    } while (choice != 3);
+}
+
+
+void staffMenu(void) {
+    int choice;
+    do {
+        printf("\n===== STAFF MENU =====\n");
+        printf("1. View students\n");
+        printf("2. Logout\n");
+        printf("Enter choice: ");
+        if (scanf("%d", &choice) != 1) {
+            clearInputBuffer();
+            choice = -1;
+        }
+
+        switch (choice) {
+            case 1:
+                displayStudents();
+                break;
+            case 2:
+                printf("Logging out...\n");
+                break;
+            default:
+                printf("Invalid choice. Try again.\n");
+        }
+    } while (choice != 2);
+}
+
+
+void guestMenu(void) {
+    int choice;
+    do {
+        printf("\n===== GUEST MENU =====\n");
+        printf("1. View public info\n");
+        printf("2. Exit\n");
+        printf("Enter choice: ");
+        if (scanf("%d", &choice) != 1) {
+            clearInputBuffer();
+            choice = -1;
+        }
+
+        switch (choice) {
+            case 1:
+                printf("Public info: guest users have no access to student records.\n");
+                break;
+            case 2:
+                printf("Exiting...\n");
+                break;
+            default:
+                printf("Invalid choice. Try again.\n");
+        }
+    } while (choice != 2);
+}
+
+
+void addStudent(void) {
+    struct Student s;
+    FILE *fp = fopen(STUDENT_FILE, "ab");
     if (!fp) {
-        printf("No student file!\n");
+        printf("Error opening %s\n", STUDENT_FILE);
         return;
     }
 
-    int roll;
-    char name[50];
-    float mark;
+    printf("Enter roll: ");
+    scanf("%d", &s.roll);
 
-    printf("Roll\tName\tMark\n");
-    printf("----\t----\t----\n");
-    while (fscanf(fp, "%d %s %f", &roll, name, &mark) == 3) {
-        printf("%d\t%s\t%.2f\n", roll, name, mark);
+    printf("Enter name (no spaces): ");
+    scanf("%49s", s.name);
+
+    printf("Enter marks: ");
+    scanf("%f", &s.marks);
+
+    if (fwrite(&s, sizeof(struct Student), 1, fp) != 1) {
+        printf("Error writing to file.\n");
+    } else {
+        printf("Student added successfully.\n");
     }
 
     fclose(fp);
 }
 
-void searchStudent() {
-    int find, roll;
-    char name[50];
-    float mark;
+void displayStudents(void) {
+    struct Student s;
+    FILE *fp = fopen(STUDENT_FILE, "rb");
+    if (!fp) {
+        printf("No student records found.\n");
+        return;
+    }
+
+    printf("\n%-10s %-20s %-10s\n", "Roll", "Name", "Marks");
+    printf("---------------------------------------------\n");
+
+    while (fread(&s, sizeof(struct Student), 1, fp) == 1) {
+        printf("%-10d %-20s %-10.2f\n", s.roll, s.name, s.marks);
+    }
+
+    fclose(fp);
+}
+
+void searchStudent(void) {
+    struct Student s;
+    int roll, found = 0;
+    FILE *fp = fopen(STUDENT_FILE, "rb");
+    if (!fp) {
+        printf("No student records found.\n");
+        return;
+    }
 
     printf("Enter roll to search: ");
-    scanf("%d", &find);
+    scanf("%d", &roll);
 
-    FILE *fp = fopen(STUD_FILE, "r");
-    while (fscanf(fp, "%d %s %f", &roll, name, &mark) == 3) {
-        if (roll == find) {
-            printf("Found: %d %s %.2f\n", roll, name, mark);
-            fclose(fp);
-            return;
-        }
-    }
-    fclose(fp);
-    printf("Student not found!\n");
-}
-
-void deleteStudent() {
-    int delRoll;
-    printf("Enter roll to delete: ");
-    scanf("%d", &delRoll);
-
-    FILE *fp = fopen(STUD_FILE, "r");
-    FILE *temp = fopen("temp.txt", "w");
-
-    int roll;
-    char name[50];
-    float mark;
-    int found = 0;
-
-    while (fscanf(fp, "%d %s %f", &roll, name, &mark) == 3) {
-        if (roll != delRoll) {
-            fprintf(temp, "%d %s %.2f\n", roll, name, mark);
-        } else {
+    while (fread(&s, sizeof(struct Student), 1, fp) == 1) {
+        if (s.roll == roll) {
+            printf("Record found:\n");
+            printf("Roll : %d\n", s.roll);
+            printf("Name : %s\n", s.name);
+            printf("Marks: %.2f\n", s.marks);
             found = 1;
+            break;
         }
     }
 
+    if (!found) {
+        printf("Student with roll %d not found.\n", roll);
+    }
+
     fclose(fp);
-    fclose(temp);
-
-    remove(STUD_FILE);
-    rename("temp.txt", STUD_FILE);
-
-    if (found) printf("Student deleted!\n");
-    else printf("Roll not found!\n");
 }
 
-void updateStudent() {
-    int updateRoll;
+void updateStudent(void) {
+    struct Student s;
+    int roll, found = 0;
+    FILE *fp = fopen(STUDENT_FILE, "rb");
+    FILE *ft = fopen("temp.dat", "wb");
+    if (!fp || !ft) {
+        printf("Error opening files.\n");
+        if (fp) fclose(fp);
+        if (ft) fclose(ft);
+        return;
+    }
+
     printf("Enter roll to update: ");
-    scanf("%d", &updateRoll);
+    scanf("%d", &roll);
 
-    FILE *fp = fopen(STUD_FILE, "r");
-    FILE *temp = fopen("temp.txt", "w");
-
-    int roll;
-    char name[50];
-    float mark;
-    int found = 0;
-
-    while (fscanf(fp, "%d %s %f", &roll, name, &mark) == 3) {
-        if (roll == updateRoll) {
+    while (fread(&s, sizeof(struct Student), 1, fp) == 1) {
+        if (s.roll == roll) {
+            printf("Current: %d %s %.2f\n", s.roll, s.name, s.marks);
+            printf("Enter new name (no spaces): ");
+            scanf("%49s", s.name);
+            printf("Enter new marks: ");
+            scanf("%f", &s.marks);
             found = 1;
-            char newName[50];
-            float newMark;
-
-            printf("New Name: ");
-            scanf(" %[^\n]", newName);
-            printf("New Mark: ");
-            scanf("%f", &newMark);
-
-            fprintf(temp, "%d %s %.2f\n", roll, newName, newMark);
-        } else {
-            fprintf(temp, "%d %s %.2f\n", roll, name, mark);
         }
+        fwrite(&s, sizeof(struct Student), 1, ft);
     }
 
     fclose(fp);
-    fclose(temp);
+    fclose(ft);
 
-    remove(STUD_FILE);
-    rename("temp.txt", STUD_FILE);
-
-    if (found) printf("Student updated!\n");
-    else printf("Roll not found!\n");
+    if (!found) {
+        printf("Student with roll %d not found.\n", roll);
+        remove("temp.dat");
+    } else {
+        remove(STUDENT_FILE);
+        rename("temp.dat", STUDENT_FILE);
+        printf("Record updated.\n");
+    }
 }
 
-void adminMenu() {
+void deleteStudent(void) {
+    struct Student s;
+    int roll, found = 0;
+    FILE *fp = fopen(STUDENT_FILE, "rb");
+    FILE *ft = fopen("temp.dat", "wb");
+    if (!fp || !ft) {
+        printf("Error opening files.\n");
+        if (fp) fclose(fp);
+        if (ft) fclose(ft);
+        return;
+    }
+
+    printf("Enter roll to delete: ");
+    scanf("%d", &roll);
+
+    while (fread(&s, sizeof(struct Student), 1, fp) == 1) {
+        if (s.roll == roll) {
+            found = 1;
+            continue;  
+        }
+        fwrite(&s, sizeof(struct Student), 1, ft);
+    }
+
+    fclose(fp);
+    fclose(ft);
+
+    if (!found) {
+        printf("Student with roll %d not found.\n", roll);
+        remove("temp.dat");
+    } else {
+        remove(STUDENT_FILE);
+        rename("temp.dat", STUDENT_FILE);
+        printf("Record deleted.\n");
+    }
+}
+
+
+void clearInputBuffer(void) {
     int c;
-    while (1) {
-        printf("\nADMIN MENU\n");
-        printf("1.Add Student Details\n2.Display Student Details\n3.Search Student Details\n4.Update Student Details\n5.Delete Student Details\n6.Logout\n");
-        scanf("%d",&c);
-        if(c==1)addStudent();
-        else if(c==2)displayStudents();
-        else if(c==3)searchStudent();
-        else if(c==4)updateStudent();
-        else if(c==5)deleteStudent();
-        else return;
-    }
-}
-
-void staffMenu() {
-    int c;
-    while (1) {
-        printf("\nSTAFF MENU\n");
-        printf("1.Add Student Details\n2.Display Student Details\n3.Search Student Details\n4.Update Student Details\n5.Delete Student Details\n6.Logout\n");
-        scanf("%d",&c);
-        if(c==1)addStudent();
-        else if(c==2)displayStudents();
-        else if(c==3)searchStudent();
-        else if(c==4)updateStudent();
-        else return;
-    }
-}
-
-void guestMenu() {
-    int c;
-    while (1) {
-        printf("\nGUEST MENU\n");
-        printf("1.Display\n2.Search\n3.Logout\n");
-        scanf("%d",&c);
-        if(c==1)displayStudents();
-        else if(c==2)searchStudent();
-        else return;
-    }
-}
-
-int main() {
-    if (!login()) {
-        printf("Invalid login!\n");
-        return 0;
-    }
-
-    printf("Logged in as: %s\n", currentRole);
-
-    if (strcmp(currentRole,"admin")==0) adminMenu();
-    else if (strcmp(currentRole,"staff")==0) staffMenu();
-    else guestMenu();
-
-    return 0;
-
+    while ((c = getchar()) != '\n' && c != EOF) {}
 }
