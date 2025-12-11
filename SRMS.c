@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define STUDENT_FILE    "students.dat"
+#define STUDENT_FILE    "students.txt"
 #define CREDENTIAL_FILE "credentials.txt"
 
 struct Student {
@@ -366,3 +366,4 @@ void clearInputBuffer(void) {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) {}
 }
+
